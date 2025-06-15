@@ -1,107 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Click the Box Game</title>
+  <meta charset="UTF-8">
+  <title>Mini Endless Runner</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #2b5876, #4e4376);
-      color: white;
       margin: 0;
-      padding: 0;
-      text-align: center;
+      background: linear-gradient(to top, #2c3e50, #3498db);
+      overflow: hidden;
     }
-    h1 {
-      margin-top: 30px;
-    }
-    #gameBox {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      background: #ff4757;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s ease;
-    }
-    #info {
-      margin-top: 80px;
-      font-size: 20px;
-    }
-    #startBtn {
-      padding: 10px 20px;
-      font-size: 16px;
-      background: #2ed573;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 20px;
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #ecf0f1;
+      border-bottom: 6px solid #2c3e50;
     }
   </style>
 </head>
 <body>
-
-  <h1>🎯 Click the Box Game</h1>
-  <div id="info">
-    <p>⏱ Time Left: <span id="time">30</span>s</p>
-    <p>🎯 Score: <span id="score">0</span></p>
-    <button id="startBtn">Start Game</button>
-  </div>
-  <div id="gameBox" style="display: none;"></div>
-
+  <canvas id="game" width="800" height="400"></canvas>
   <script>
-    const gameBox = document.getElementById("gameBox");
-    const scoreText = document.getElementById("score");
-    const timeText = document.getElementById("time");
-    const startBtn = document.getElementById("startBtn");
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
 
+    const groundHeight = 60;
+    let gameSpeed = 4;
     let score = 0;
-    let time = 30;
-    let gameInterval;
-    let moveInterval;
 
-    function randomPosition() {
-      const x = Math.random() * (window.innerWidth - 60);
-      const y = Math.random() * (window.innerHeight - 60);
-      gameBox.style.left = x + "px";
-      gameBox.style.top = y + "px";
-    }
+    const player = {
+      x: 100,
+      y: canvas.height - groundHeight - 40,
+      width: 40,
+      height: 40,
+      vy: 0,
+      gravity: 1.5,
+      jumpPower: -18,
+      grounded: true,
+      color: '#e74c3c'
+    };
 
-    function startGame() {
-      score = 0;
-      time = 30;
-      scoreText.textContent = score;
-      timeText.textContent = time;
-      gameBox.style.display = "block";
-      startBtn.disabled = true;
+    const obstacles = [];
 
-      gameBox.addEventListener("click", () => {
-        score++;
-        scoreText.textContent = score;
-        randomPosition();
+    function spawnObstacle() {
+      const height = Math.random() * 30 + 20;
+      obstacles.push({
+        x: canvas.width + 20,
+        y: canvas.height - groundHeight - height,
+        width: 20,
+        height,
+        color: '#2c3e50'
       });
+    }
 
-      randomPosition();
+    function drawGround() {
+      ctx.fillStyle = '#2ecc71';
+      ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+    }
 
-      moveInterval = setInterval(randomPosition, 800);
-      gameInterval = setInterval(() => {
-        time--;
-        timeText.textContent = time;
-        if (time === 0) {
-          endGame();
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    function drawObstacles() {
+      for (let obs of obstacles) {
+        ctx.fillStyle = obs.color;
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
+    }
+
+    function updatePlayer() {
+      player.y += player.vy;
+      player.vy += player.gravity;
+
+      if (player.y + player.height >= canvas.height - groundHeight) {
+        player.y = canvas.height - groundHeight - player.height;
+        player.vy = 0;
+        player.grounded = true;
+      }
+    }
+
+    function updateObstacles() {
+      for (let obs of obstacles) {
+        obs.x -= gameSpeed;
+      }
+
+      // Remove off-screen
+      while (obstacles.length > 0 && obstacles[0].x + obstacles[0].width < 0) {
+        obstacles.shift();
+        score++;
+      }
+    }
+
+    function checkCollision() {
+      for (let obs of obstacles) {
+        if (
+          player.x < obs.x + obs.width &&
+          player.x + player.width > obs.x &&
+          player.y < obs.y + obs.height &&
+          player.y + player.height > obs.y
+        ) {
+          gameOver();
         }
-      }, 1000);
+      }
     }
 
-    function endGame() {
-      clearInterval(gameInterval);
-      clearInterval(moveInterval);
-      gameBox.style.display = "none";
-      alert("⏰ Time's up! Your score: " + score);
-      startBtn.disabled = false;
+    function gameOver() {
+      alert("💀 Game Over! Score: " + score);
+      location.reload();
     }
 
-    startBtn.addEventListener("click", startGame);
+    function drawScore() {
+      ctx.fillStyle = '#34495e';
+      ctx.font = '20px Arial';
+      ctx.fillText("Score: " + score, 10, 30);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawGround();
+      drawPlayer();
+      drawObstacles();
+      drawScore();
+
+      updatePlayer();
+      updateObstacles();
+      checkCollision();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space' && player.grounded) {
+        player.vy = player.jumpPower;
+        player.grounded = false;
+      }
+    });
+
+    setInterval(spawnObstacle, 2000);
+
+    gameLoop();
   </script>
 </body>
 </html>
