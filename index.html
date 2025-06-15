@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Click the Box Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #2b5876, #4e4376);
+      color: white;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 30px;
+    }
+    #gameBox {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: #ff4757;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    #info {
+      margin-top: 80px;
+      font-size: 20px;
+    }
+    #startBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #2ed573;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎯 Click the Box Game</h1>
+  <div id="info">
+    <p>⏱ Time Left: <span id="time">30</span>s</p>
+    <p>🎯 Score: <span id="score">0</span></p>
+    <button id="startBtn">Start Game</button>
+  </div>
+  <div id="gameBox" style="display: none;"></div>
+
+  <script>
+    const gameBox = document.getElementById("gameBox");
+    const scoreText = document.getElementById("score");
+    const timeText = document.getElementById("time");
+    const startBtn = document.getElementById("startBtn");
+
+    let score = 0;
+    let time = 30;
+    let gameInterval;
+    let moveInterval;
+
+    function randomPosition() {
+      const x = Math.random() * (window.innerWidth - 60);
+      const y = Math.random() * (window.innerHeight - 60);
+      gameBox.style.left = x + "px";
+      gameBox.style.top = y + "px";
+    }
+
+    function startGame() {
+      score = 0;
+      time = 30;
+      scoreText.textContent = score;
+      timeText.textContent = time;
+      gameBox.style.display = "block";
+      startBtn.disabled = true;
+
+      gameBox.addEventListener("click", () => {
+        score++;
+        scoreText.textContent = score;
+        randomPosition();
+      });
+
+      randomPosition();
+
+      moveInterval = setInterval(randomPosition, 800);
+      gameInterval = setInterval(() => {
+        time--;
+        timeText.textContent = time;
+        if (time === 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      clearInterval(moveInterval);
+      gameBox.style.display = "none";
+      alert("⏰ Time's up! Your score: " + score);
+      startBtn.disabled = false;
+    }
+
+    startBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
